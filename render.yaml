@@ -1,0 +1,65 @@
+# RAG Chatbot Render Blueprint
+# Deploy with: Create New Blueprint from this repository
+
+services:
+  # Backend API Service
+  - type: web
+    name: rag-chatbot-api
+    runtime: python
+    region: oregon
+    plan: starter
+    branch: main
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        value: sqlite:///./data/rag_chatbot.db
+      - key: CORS_ORIGINS
+        fromService:
+          type: web
+          name: rag-chatbot-frontend
+          property: host
+      - key: DEBUG
+        value: false
+      - key: PYTHON_VERSION
+        value: 3.11.0
+    disk:
+      name: rag-data
+      mountPath: /app/data
+      sizeGB: 1
+    autoDeploy: true
+
+  # Frontend Web Service
+  - type: web
+    name: rag-chatbot-frontend
+    runtime: static
+    region: oregon
+    branch: main
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    pullRequestPreviewsEnabled: true
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      - path: /index.html
+        name: Cache-Control
+        value: no-cache
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://rag-chatbot-api.onrender.com/api/*
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: 20.10.0
+    autoDeploy: true

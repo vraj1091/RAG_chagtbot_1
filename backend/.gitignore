@@ -1,0 +1,7 @@
+# Exclude data directories to prevent uvicorn reload loops
+data/
+uploads/
+__pycache__/
+*.pyc
+.env
+.pytest_cache/
