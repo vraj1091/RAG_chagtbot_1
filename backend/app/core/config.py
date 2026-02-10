@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite:///./data/rag_chatbot.db"
     
     # CORS
-    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173,https://rag-chatbot-frontend-1cx3.onrender.com"
     
     @property
     def cors_origins_list(self) -> List[str]:
