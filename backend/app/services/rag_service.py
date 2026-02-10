@@ -17,7 +17,7 @@ class RAGService:
         """Initialize the RAG service with Gemini API."""
         self.client = None
         # Using gemini-2.0-flash-lite-001 based on available models list
-        self.model_name = "gemini-2.5-flash"
+        self.model_name = "gemini-1.5-flash"
         self._configure_gemini()
     
     def _configure_gemini(self):
