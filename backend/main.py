@@ -50,10 +50,22 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Configure CORS
+# Configure CORS - ensure Render frontend URL is always included
+cors_origins = list(set(settings.cors_origins_list + [
+    "https://rag-chatbot-frontend-1cx3.onrender.com",
+    "http://localhost:3000",
+    "http://localhost:5173",
+]))
+# Also handle case where env var might contain hostname without https://
+cors_origins = [
+    f"https://{o}" if not o.startswith("http") and "." in o else o
+    for o in cors_origins
+]
+logger.info(f"CORS origins: {cors_origins}")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins_list,
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
