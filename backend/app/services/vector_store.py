@@ -4,10 +4,6 @@ from typing import List, Optional, Dict, Any
 from pathlib import Path
 import json
 
-import chromadb
-from chromadb.config import Settings as ChromaSettings
-from sentence_transformers import SentenceTransformer
-
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -19,37 +15,52 @@ class VectorStoreService:
     _instance = None
     _embedding_model = None
     _client = None
+    _initialized = False
     
     def __new__(cls):
         """Singleton pattern for vector store service."""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            cls._instance._initialize()
         return cls._instance
     
-    def _initialize(self):
-        """Initialize the vector store and embedding model."""
-        logger.info("Initializing vector store service...")
+    def _ensure_initialized(self):
+        """Lazy initialization - only load heavy dependencies when first needed."""
+        if self._initialized:
+            return
         
-        # Initialize embedding model
-        self._embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-        
-        # Initialize ChromaDB client
-        chroma_path = Path(settings.CHROMA_PERSIST_DIR)
-        chroma_path.mkdir(parents=True, exist_ok=True)
-        
-        self._client = chromadb.PersistentClient(
-            path=str(chroma_path),
-            settings=ChromaSettings(
-                anonymized_telemetry=False,
-                allow_reset=True
+        try:
+            logger.info("Initializing vector store service (lazy)...")
+            
+            # Import heavy dependencies only when needed
+            import chromadb
+            from chromadb.config import Settings as ChromaSettings
+            from sentence_transformers import SentenceTransformer
+            
+            # Initialize embedding model
+            self._embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+            
+            # Initialize ChromaDB client
+            chroma_path = Path(settings.CHROMA_PERSIST_DIR)
+            chroma_path.mkdir(parents=True, exist_ok=True)
+            
+            self._client = chromadb.PersistentClient(
+                path=str(chroma_path),
+                settings=ChromaSettings(
+                    anonymized_telemetry=False,
+                    allow_reset=True
+                )
             )
-        )
-        
-        logger.info("Vector store service initialized successfully")
+            
+            self._initialized = True
+            logger.info("Vector store service initialized successfully")
+            
+        except Exception as e:
+            logger.error(f"Failed to initialize vector store: {str(e)}")
+            raise
     
     def _get_collection(self, user_id: int):
         """Get or create a collection for a user."""
+        self._ensure_initialized()
         collection_name = f"user_{user_id}_documents"
         return self._client.get_or_create_collection(
             name=collection_name,
@@ -98,6 +109,7 @@ class VectorStoreService:
     ) -> int:
         """Add a document to the vector store."""
         try:
+            self._ensure_initialized()
             collection = self._get_collection(user_id)
             
             # Chunk the text
@@ -145,6 +157,7 @@ class VectorStoreService:
     ) -> List[Dict[str, Any]]:
         """Search for relevant document chunks."""
         try:
+            self._ensure_initialized()
             collection = self._get_collection(user_id)
             
             # Check if collection has any documents
@@ -181,10 +194,10 @@ class VectorStoreService:
     def delete_document(self, user_id: int, document_id: int) -> bool:
         """Delete a document from the vector store."""
         try:
+            self._ensure_initialized()
             collection = self._get_collection(user_id)
             
             # Get all chunk IDs for this document
-            # ChromaDB doesn't support direct filtering on delete, so we need to query first
             results = collection.get(
                 where={"document_id": document_id},
                 include=["metadatas"]
@@ -204,6 +217,7 @@ class VectorStoreService:
     def get_document_count(self, user_id: int) -> int:
         """Get the total number of document chunks for a user."""
         try:
+            self._ensure_initialized()
             collection = self._get_collection(user_id)
             return collection.count()
         except Exception as e:
@@ -213,6 +227,7 @@ class VectorStoreService:
     def clear_user_data(self, user_id: int) -> bool:
         """Clear all vector store data for a user."""
         try:
+            self._ensure_initialized()
             collection_name = f"user_{user_id}_documents"
             self._client.delete_collection(collection_name)
             logger.info(f"Cleared vector store data for user {user_id}")
@@ -222,5 +237,5 @@ class VectorStoreService:
             return False
 
 
-# Global instance
+# Global instance - does NOT initialize heavy deps until first use
 vector_store = VectorStoreService()

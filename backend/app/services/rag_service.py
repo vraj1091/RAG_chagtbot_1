@@ -2,10 +2,7 @@
 import logging
 from typing import List, Optional, Dict, Any
 
-from google import genai
-
 from app.core.config import settings
-from app.services.vector_store import vector_store
 
 logger = logging.getLogger(__name__)
 
@@ -16,9 +13,24 @@ class RAGService:
     def __init__(self):
         """Initialize the RAG service with Gemini API."""
         self.client = None
-        # Using gemini-2.0-flash-lite-001 based on available models list
+        # Using gemini-1.5-flash
         self.model_name = "gemini-1.5-flash"
+        self._vector_store = None
+        self._configured = False
+    
+    def _ensure_configured(self):
+        """Lazy configuration of Gemini client."""
+        if self._configured:
+            return
+        self._configured = True
         self._configure_gemini()
+    
+    def _get_vector_store(self):
+        """Lazy import of vector store to avoid import-time crashes."""
+        if self._vector_store is None:
+            from app.services.vector_store import vector_store
+            self._vector_store = vector_store
+        return self._vector_store
     
     def _configure_gemini(self):
         """Configure the Gemini API client."""
@@ -27,6 +39,7 @@ class RAGService:
             return
         
         try:
+            from google import genai
             # Use the new google.genai SDK
             self.client = genai.Client(api_key=settings.GEMINI_API_KEY)
             logger.info(f"Gemini API configured successfully with {self.model_name}")
@@ -101,6 +114,8 @@ Please provide a helpful and accurate response:"""
     ) -> Dict[str, Any]:
         """Generate a response using RAG."""
         try:
+            self._ensure_configured()
+            
             if not self.client:
                 logger.error("Gemini client not initialized")
                 return {
@@ -110,7 +125,8 @@ Please provide a helpful and accurate response:"""
                 }
             
             # Search for relevant context
-            context_docs = vector_store.search(user_id, query, n_results=5)
+            vs = self._get_vector_store()
+            context_docs = vs.search(user_id, query, n_results=5)
             
             # Filter by relevance threshold
             relevant_docs = [
@@ -189,6 +205,8 @@ Please provide a helpful and accurate response:"""
     async def generate_chat_title(self, first_message: str) -> str:
         """Generate a title for a chat based on the first message."""
         try:
+            self._ensure_configured()
+            
             if not self.client:
                 return "New Conversation"
             
@@ -214,5 +232,5 @@ Respond with only the title, no quotes or punctuation at the end."""
             return "New Conversation"
 
 
-# Global instance
+# Global instance - does NOT connect to anything until first use
 rag_service = RAGService()
