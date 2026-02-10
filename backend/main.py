@@ -61,14 +61,18 @@ cors_origins = [
     f"https://{o}" if not o.startswith("http") and "." in o else o
     for o in cors_origins
 ]
+# Remove empty strings
+cors_origins = [o for o in cors_origins if o]
 logger.info(f"CORS origins: {cors_origins}")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
+    allow_origin_regex=r"https://.*\.onrender\.com",
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Include routers
@@ -98,10 +102,13 @@ async def health_check():
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
     """Global exception handler for unhandled errors."""
-    logger.error(f"Unhandled exception: {str(exc)}", exc_info=True)
+    logger.error(
+        f"Unhandled exception on {request.method} {request.url.path}: {type(exc).__name__}: {str(exc)}", 
+        exc_info=True
+    )
     return JSONResponse(
         status_code=500,
-        content={"detail": "An internal error occurred. Please try again later."}
+        content={"detail": f"An internal error occurred: {type(exc).__name__}. Please try again later."}
     )
 
 

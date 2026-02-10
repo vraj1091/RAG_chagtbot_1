@@ -23,7 +23,7 @@ services:
       - key: CORS_ORIGINS
         value: https://rag-chatbot-frontend-1cx3.onrender.com
       - key: DEBUG
-        value: false
+        value: "false"
       - key: PYTHON_VERSION
         value: 3.11.0
     autoDeploy: true
@@ -47,7 +47,7 @@ services:
     routes:
       - type: rewrite
         source: /api/*
-        destination: https://rag-chatbot-api-ljjp.onrender.com/api/*
+        destination: https://rag-chatbot-api-1jjn.onrender.com/api/*
       - type: rewrite
         source: /*
         destination: /index.html
@@ -55,5 +55,5 @@ services:
       - key: NODE_VERSION
         value: 20.10.0
       - key: VITE_API_URL
-        value: https://rag-chatbot-api-ljjp.onrender.com
+        value: https://rag-chatbot-api-1jjn.onrender.com
     autoDeploy: true

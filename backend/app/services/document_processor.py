@@ -6,12 +6,30 @@ from pathlib import Path
 from typing import Optional, List, Tuple
 import uuid
 
-# Document processors
-from PyPDF2 import PdfReader
-from docx import Document as DocxDocument
-from openpyxl import load_workbook
-from pptx import Presentation
-from PIL import Image
+from app.core.config import settings
+
+logger = logging.getLogger(__name__)
+
+# Lazy imports for document processors - only imported when actually used
+def _import_pdf_reader():
+    from PyPDF2 import PdfReader
+    return PdfReader
+
+def _import_docx():
+    from docx import Document as DocxDocument
+    return DocxDocument
+
+def _import_openpyxl():
+    from openpyxl import load_workbook
+    return load_workbook
+
+def _import_pptx():
+    from pptx import Presentation
+    return Presentation
+
+def _import_pil():
+    from PIL import Image
+    return Image
 
 # OCR support
 try:
@@ -25,10 +43,6 @@ try:
     PDF2IMAGE_AVAILABLE = True
 except ImportError:
     PDF2IMAGE_AVAILABLE = False
-
-from app.core.config import settings
-
-logger = logging.getLogger(__name__)
 
 
 class DocumentProcessor:
@@ -136,6 +150,7 @@ class DocumentProcessor:
         
         try:
             # Try regular text extraction first
+            PdfReader = _import_pdf_reader()
             with open(file_path, 'rb') as f:
                 reader = PdfReader(f)
                 for page in reader.pages:
@@ -188,6 +203,7 @@ class DocumentProcessor:
     @staticmethod
     def _extract_docx(file_path: str) -> str:
         """Extract text from a Word document."""
+        DocxDocument = _import_docx()
         doc = DocxDocument(file_path)
         text_parts = []
         
@@ -207,6 +223,7 @@ class DocumentProcessor:
     @staticmethod
     def _extract_xlsx(file_path: str) -> str:
         """Extract text from an Excel file."""
+        load_workbook = _import_openpyxl()
         wb = load_workbook(file_path, data_only=True)
         text_parts = []
         
@@ -226,6 +243,7 @@ class DocumentProcessor:
     @staticmethod
     def _extract_pptx(file_path: str) -> str:
         """Extract text from a PowerPoint file."""
+        Presentation = _import_pptx()
         prs = Presentation(file_path)
         text_parts = []
         
@@ -250,6 +268,7 @@ class DocumentProcessor:
             return "[Image file - OCR not available]"
         
         try:
+            Image = _import_pil()
             image = Image.open(file_path)
             text = pytesseract.image_to_string(image)
             return text.strip() if text.strip() else "[No text detected in image]"
