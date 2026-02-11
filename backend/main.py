@@ -53,10 +53,19 @@ app = FastAPI(
 # Configure CORS - MOST PERMISSIVE SETTINGS - Allow everything
 logger.info("Configuring CORS to allow ALL origins, methods, and headers")
 
+# Specific origins for better debugging
+allowed_origins = [
+    "*",  # Allow all
+    "https://rag-chatbot-frontend-1cx3.onrender.com",
+    "https://rag-chatbot-frontend-1o3.onrender.com",
+    "http://localhost:5173",
+    "http://localhost:3000",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins
-    allow_credentials=False,  # No credentials needed
+    allow_origins=allowed_origins,  # Allow all origins
+    allow_credentials=True,  # Allow credentials
     allow_methods=["*"],  # Allow all HTTP methods
     allow_headers=["*"],  # Allow all headers
     expose_headers=["*"],  # Expose all headers
