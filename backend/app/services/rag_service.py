@@ -13,8 +13,8 @@ class RAGService:
     def __init__(self):
         """Initialize the RAG service with Gemini API."""
         self.client = None
-        # Using gemini-1.5-flash
-        self.model_name = "gemini-1.5-flash"
+        # Using gemini-2.0-flash (latest stable model)
+        self.model_name = "gemini-2.0-flash"
         self._vector_store = None
         self._configured = False
     
