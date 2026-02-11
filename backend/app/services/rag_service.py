@@ -203,10 +203,12 @@ Please provide a helpful and accurate response:"""
             error_str = str(e)
             logger.error(f"Gemini API error: {error_str}")
             
-            # Check for rate limit
-            if "429" in error_str or "quota" in error_str.lower():
-                raise ValueError("API rate limit exceeded. Please wait and try again.")
-            raise
+            # Check for rate limit / quota exceeded
+            if "429" in error_str or "quota" in error_str.lower() or "ResourceExhausted" in error_str:
+                return "⚠️ **API Quota Exceeded**\n\nThe Gemini API free tier quota has been exceeded. Please:\n\n1. Get a new API key from: https://makersuite.google.com/app/apikey\n2. Update it in the backend config\n3. Or wait until tomorrow for quota reset\n\nThe chat will work perfectly once you add a valid API key!"
+            
+            # Generic error
+            return f"I apologize, but I encountered an error: {type(e).__name__}. The API key might be invalid or quota exceeded. Please check the API key configuration."
     
     async def generate_chat_title(self, first_message: str) -> str:
         """Generate a title for a chat based on the first message."""
