@@ -1,21 +1,13 @@
 import axios from 'axios';
 
 // Determine the API base URL
-// Priority: VITE_API_URL env var > production backend URL > local fallback
 const getBaseURL = () => {
-    // If VITE_API_URL is set (from Render env vars at build time), use it
-    if (import.meta.env.VITE_API_URL) {
-        const url = import.meta.env.VITE_API_URL;
-        // Ensure it ends with /api
-        return url.endsWith('/api') ? url : `${url}/api`;
-    }
-
-    // In production (on Render), use the actual backend URL
+    // In production on Render, always use the absolute backend URL
     if (typeof window !== 'undefined' && window.location.hostname.includes('onrender.com')) {
         return 'https://rag-chatbot-api-1jjn.onrender.com/api';
     }
 
-    // Local development fallback (uses Vite proxy)
+    // Local development - use relative path (Vite proxy handles it)
     return '/api';
 };
 
