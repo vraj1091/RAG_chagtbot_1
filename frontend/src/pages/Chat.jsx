@@ -45,7 +45,13 @@ const Chat = () => {
     // Fetch specific chat if chatId in URL
     useEffect(() => {
         if (chatId) {
-            fetchChat(parseInt(chatId));
+            fetchChat(parseInt(chatId)).then((result) => {
+                // If chat not found, redirect to new chat
+                if (result && result.notFound) {
+                    navigate('/chat');
+                    toast.error('Chat not found. Starting new chat.');
+                }
+            });
         } else {
             clearCurrentChat();
         }

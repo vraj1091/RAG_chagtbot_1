@@ -30,8 +30,16 @@ export const useChatStore = create((set, get) => ({
                 messages: response.data.messages || [],
                 isLoading: false,
             });
+            return { success: true };
         } catch (error) {
-            set({ error: 'Failed to load chat', isLoading: false });
+            console.error('Failed to load chat:', error);
+            set({ 
+                error: 'Chat not found',
+                isLoading: false,
+                currentChat: null,
+                messages: []
+            });
+            return { success: false, notFound: error.response?.status === 404 };
         }
     },
 
