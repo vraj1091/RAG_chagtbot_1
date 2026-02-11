@@ -4,11 +4,11 @@ import axios from 'axios';
 const getBaseURL = () => {
     // In production on Render, always use the absolute backend URL
     if (typeof window !== 'undefined' && window.location.hostname.includes('onrender.com')) {
-        return 'https://rag-chatbot-api-1jjn.onrender.com/api';
+        return 'https://rag-chatbot-api-1jjp.onrender.com/api';
     }
 
-    // Local development - use relative path (Vite proxy handles it)
-    return '/api';
+    // Local development - use localhost backend directly
+    return 'http://localhost:8000/api';
 };
 
 // Create axios instance with a placeholder baseURL
