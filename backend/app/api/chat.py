@@ -179,6 +179,9 @@ async def send_message(
         sources = rag_response.get("sources", [])
         
     except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error in send_message: {str(e)}", exc_info=True)
         response_text = f"I apologize, but I encountered an error while processing your request. Please try again."
         sources = []
     

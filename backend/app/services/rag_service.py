@@ -215,10 +215,7 @@ Please provide a helpful and accurate response:"""
 
 Respond with only the title, no quotes or punctuation at the end."""
             
-            response = self.client.models.generate_content(
-                model=self.model_name,
-                contents=prompt
-            )
+            response = self.client.generate_content(prompt)
             
             if response and hasattr(response, 'text') and response.text:
                 title = response.text.strip()[:100]  # Limit length
