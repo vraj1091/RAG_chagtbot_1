@@ -11,9 +11,9 @@ const getBaseURL = () => {
     return '/api';
 };
 
-// Create axios instance
+// Create axios instance with a placeholder baseURL
+// The actual URL will be determined at runtime via the request interceptor
 const api = axios.create({
-    baseURL: getBaseURL(),
     timeout: 60000,
     headers: {
         'Content-Type': 'application/json',
@@ -23,6 +23,10 @@ const api = axios.create({
 // Request interceptor
 api.interceptors.request.use(
     (config) => {
+        // Determine baseURL at runtime (not build time)
+        if (!config.baseURL) {
+            config.baseURL = getBaseURL();
+        }
         // Token is already set in auth store
         return config;
     },
