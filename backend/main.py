@@ -50,17 +50,31 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Configure CORS - allow all origins since we use Bearer token auth (not cookies)
-logger.info("Configuring CORS to allow all origins")
+# Configure CORS - MOST PERMISSIVE SETTINGS - Allow everything
+logger.info("Configuring CORS to allow ALL origins, methods, and headers")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=["*"],
+    allow_origins=["*"],  # Allow all origins
+    allow_credentials=False,  # No credentials needed
+    allow_methods=["*"],  # Allow all HTTP methods
+    allow_headers=["*"],  # Allow all headers
+    expose_headers=["*"],  # Expose all headers
+    max_age=3600,  # Cache preflight for 1 hour
 )
+
+# Add OPTIONS handler for preflight requests
+@app.options("/{full_path:path}")
+async def options_handler(full_path: str):
+    """Handle OPTIONS requests for CORS preflight."""
+    return JSONResponse(
+        content={},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
 
 # Include routers
 app.include_router(auth_router, prefix="/api")
