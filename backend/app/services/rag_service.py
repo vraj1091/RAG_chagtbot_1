@@ -35,7 +35,7 @@ class RAGService:
     def _configure_gemini(self):
         """Configure the Gemini API client."""
         if not settings.GEMINI_API_KEY:
-            logger.warning("Gemini API key not configured")
+            logger.error("Gemini API key not configured! Set GEMINI_API_KEY environment variable.")
             return
         
         try:
@@ -44,9 +44,12 @@ class RAGService:
             genai.configure(api_key=settings.GEMINI_API_KEY)
             # Create the model
             self.client = genai.GenerativeModel(self.model_name)
-            logger.info(f"Gemini API configured successfully with {self.model_name}")
+            logger.info(f"✓ Gemini API configured successfully with {self.model_name}")
+        except ImportError as e:
+            logger.error(f"Failed to import google.generativeai: {str(e)}. Install with: pip install google-generativeai")
+            self.client = None
         except Exception as e:
-            logger.error(f"Failed to configure Gemini: {str(e)}")
+            logger.error(f"Failed to configure Gemini API: {str(e)}")
             self.client = None
     
     def _build_context_prompt(
@@ -119,16 +122,20 @@ Please provide a helpful and accurate response:"""
             self._ensure_configured()
             
             if not self.client:
-                logger.error("Gemini client not initialized")
+                logger.error("Gemini client not initialized - API key missing or import failed")
                 return {
-                    "response": "I apologize, but the AI service is not configured. Please check the API key.",
+                    "response": "I'm sorry, but I'm currently unable to respond. The AI service is not properly configured. Please ensure the Gemini API is set up correctly.",
                     "sources": [],
                     "used_context": False
                 }
             
             # Search for relevant context
-            vs = self._get_vector_store()
-            context_docs = vs.search(user_id, query, n_results=5)
+            try:
+                vs = self._get_vector_store()
+                context_docs = vs.search(user_id, query, n_results=5)
+            except Exception as e:
+                logger.warning(f"Vector store search failed: {str(e)}. Continuing without context.")
+                context_docs = []
             
             # Filter by relevance threshold
             relevant_docs = [
@@ -163,7 +170,7 @@ Please provide a helpful and accurate response:"""
             }
             
         except Exception as e:
-            logger.error(f"Error generating RAG response: {str(e)}")
+            logger.error(f"Error generating RAG response: {type(e).__name__}: {str(e)}", exc_info=True)
             # Check for quota exceeded
             if "429" in str(e) or "quota" in str(e).lower() or "RESOURCE_EXHAUSTED" in str(e):
                 return {
@@ -172,7 +179,7 @@ Please provide a helpful and accurate response:"""
                     "used_context": False
                 }
             return {
-                "response": "I apologize, but I encountered an error while processing your request. Please try again.",
+                "response": f"I apologize, but I encountered an error while processing your request: {type(e).__name__}. Please try again.",
                 "sources": [],
                 "used_context": False
             }
