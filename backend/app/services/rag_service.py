@@ -39,9 +39,11 @@ class RAGService:
             return
         
         try:
-            from google import genai
-            # Use the new google.genai SDK
-            self.client = genai.Client(api_key=settings.GEMINI_API_KEY)
+            import google.generativeai as genai
+            # Configure the API
+            genai.configure(api_key=settings.GEMINI_API_KEY)
+            # Create the model
+            self.client = genai.GenerativeModel(self.model_name)
             logger.info(f"Gemini API configured successfully with {self.model_name}")
         except Exception as e:
             logger.error(f"Failed to configure Gemini: {str(e)}")
@@ -181,11 +183,8 @@ Please provide a helpful and accurate response:"""
             if not self.client:
                 raise ValueError("Gemini client not initialized")
             
-            # Generate content using the new SDK
-            response = self.client.models.generate_content(
-                model=self.model_name,
-                contents=prompt
-            )
+            # Generate content using google.generativeai
+            response = self.client.generate_content(prompt)
             
             # Get the text from response
             if response and hasattr(response, 'text') and response.text:

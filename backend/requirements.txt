@@ -1,7 +1,12 @@
+# Absolute minimum dependencies for Render free tier
+# Core API only - no ML, no vector search, no heavy document processing
+
 # FastAPI and Server
 fastapi==0.109.0
 uvicorn[standard]==0.27.0
 python-multipart==0.0.6
+
+# Auth
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 bcrypt==4.0.1
@@ -10,15 +15,13 @@ bcrypt==4.0.1
 sqlalchemy==2.0.25
 aiosqlite==0.19.0
 
-# Gemini API
+# Gemini API (lightweight)
 google-generativeai>=0.8.0
-google-genai
 
-# Document Processing (lightweight)
+# Basic document processing (lightweight)
 pypdf2==3.0.1
 python-docx==1.1.0
 openpyxl==3.1.2
-python-pptx==0.6.23
 Pillow==10.2.0
 
 # Utilities
