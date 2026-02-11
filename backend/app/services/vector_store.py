@@ -2,11 +2,20 @@
 import logging
 from typing import List, Optional, Dict, Any
 from pathlib import Path
-import json
 
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+
+# Check if heavy dependencies are available
+VECTOR_STORE_AVAILABLE = False
+try:
+    import chromadb
+    from sentence_transformers import SentenceTransformer
+    VECTOR_STORE_AVAILABLE = True
+    logger.info("Vector store dependencies (chromadb, sentence-transformers) are available")
+except ImportError as e:
+    logger.warning(f"Vector store dependencies not available: {e}. Document search will be disabled.")
 
 
 class VectorStoreService:
@@ -28,13 +37,15 @@ class VectorStoreService:
         if self._initialized:
             return
         
+        if not VECTOR_STORE_AVAILABLE:
+            logger.warning("Vector store dependencies not installed. Search is disabled.")
+            self._initialized = True
+            return
+        
         try:
             logger.info("Initializing vector store service (lazy)...")
             
-            # Import heavy dependencies only when needed
-            import chromadb
             from chromadb.config import Settings as ChromaSettings
-            from sentence_transformers import SentenceTransformer
             
             # Initialize embedding model
             self._embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
@@ -51,16 +62,22 @@ class VectorStoreService:
                 )
             )
             
-            self._initialized = True
             logger.info("Vector store service initialized successfully")
             
         except Exception as e:
             logger.error(f"Failed to initialize vector store: {str(e)}")
-            raise
+        
+        self._initialized = True
+    
+    def _is_ready(self) -> bool:
+        """Check if vector store is properly initialized."""
+        self._ensure_initialized()
+        return self._client is not None and self._embedding_model is not None
     
     def _get_collection(self, user_id: int):
         """Get or create a collection for a user."""
-        self._ensure_initialized()
+        if not self._is_ready():
+            return None
         collection_name = f"user_{user_id}_documents"
         return self._client.get_or_create_collection(
             name=collection_name,
@@ -108,9 +125,14 @@ class VectorStoreService:
         filename: str
     ) -> int:
         """Add a document to the vector store."""
+        if not self._is_ready():
+            logger.warning("Vector store not available - skipping document indexing")
+            return 0
+            
         try:
-            self._ensure_initialized()
             collection = self._get_collection(user_id)
+            if collection is None:
+                return 0
             
             # Chunk the text
             chunks = self._chunk_text(text)
@@ -156,9 +178,14 @@ class VectorStoreService:
         n_results: int = 5
     ) -> List[Dict[str, Any]]:
         """Search for relevant document chunks."""
+        if not self._is_ready():
+            logger.warning("Vector store not available - returning empty results")
+            return []
+            
         try:
-            self._ensure_initialized()
             collection = self._get_collection(user_id)
+            if collection is None:
+                return []
             
             # Check if collection has any documents
             if collection.count() == 0:
@@ -193,9 +220,13 @@ class VectorStoreService:
     
     def delete_document(self, user_id: int, document_id: int) -> bool:
         """Delete a document from the vector store."""
+        if not self._is_ready():
+            return False
+            
         try:
-            self._ensure_initialized()
             collection = self._get_collection(user_id)
+            if collection is None:
+                return False
             
             # Get all chunk IDs for this document
             results = collection.get(
@@ -216,9 +247,13 @@ class VectorStoreService:
     
     def get_document_count(self, user_id: int) -> int:
         """Get the total number of document chunks for a user."""
+        if not self._is_ready():
+            return 0
+            
         try:
-            self._ensure_initialized()
             collection = self._get_collection(user_id)
+            if collection is None:
+                return 0
             return collection.count()
         except Exception as e:
             logger.error(f"Error getting document count: {str(e)}")
@@ -226,8 +261,10 @@ class VectorStoreService:
     
     def clear_user_data(self, user_id: int) -> bool:
         """Clear all vector store data for a user."""
+        if not self._is_ready():
+            return False
+            
         try:
-            self._ensure_initialized()
             collection_name = f"user_{user_id}_documents"
             self._client.delete_collection(collection_name)
             logger.info(f"Cleared vector store data for user {user_id}")
