@@ -10,7 +10,7 @@ services:
     plan: free
     branch: main
     rootDir: backend
-    buildCommand: chmod +x build.sh && ./build.sh
+    buildCommand: pip install -r requirements.txt && pip install numpy"<2.0" chromadb==0.4.22 sentence-transformers==2.3.1 || true
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
