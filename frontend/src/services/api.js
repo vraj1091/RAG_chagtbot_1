@@ -1,11 +1,12 @@
 import axios from 'axios';
 
-// Determine the API base URL - Updated 2026-02-11
+// Determine the API base URL - Updated 2026-02-12
 const getBaseURL = () => {
     // In production on Render, always use the absolute backend URL
-    // IMPORTANT: URL is ljjp (lowercase L) not 1jjp (number 1)
+    // Try both possible URLs (1jjp with number 1, and ljjp with lowercase L)
     if (typeof window !== 'undefined' && window.location.hostname.includes('onrender.com')) {
-        return 'https://rag-chatbot-api-ljjp.onrender.com/api';
+        // Use the correct production URL with number 1 (1jjp)
+        return 'https://rag-chatbot-api-1jjp.onrender.com/api';
     }
 
     // Local development - use localhost backend directly
