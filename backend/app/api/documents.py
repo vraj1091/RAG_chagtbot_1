@@ -14,7 +14,8 @@ from app.schemas.document import (
     DocumentUploadResponse, DocumentDeleteResponse
 )
 from app.services.document_processor import DocumentProcessor
-from app.services.vector_store import vector_store
+# Lazy import to avoid loading heavy dependencies at startup
+# from app.services.vector_store import vector_store
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
 
