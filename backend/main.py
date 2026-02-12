@@ -50,38 +50,39 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Configure CORS - MOST PERMISSIVE SETTINGS - Allow everything
-logger.info("Configuring CORS to allow ALL origins, methods, and headers")
+# Configure CORS - ULTRA PERMISSIVE SETTINGS
+logger.info("Configuring CORS to allow ALL origins")
 
-# Specific origins for better debugging
-allowed_origins = [
-    "*",  # Allow all
-    "https://rag-chatbot-frontend-1cx3.onrender.com",
-    "https://rag-chatbot-frontend-1o3.onrender.com",
-    "http://localhost:5173",
-    "http://localhost:3000",
-]
-
+# Allow ALL origins with wildcard
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,  # Allow all origins
-    allow_credentials=True,  # Allow credentials
-    allow_methods=["*"],  # Allow all HTTP methods
-    allow_headers=["*"],  # Allow all headers
-    expose_headers=["*"],  # Expose all headers
-    max_age=3600,  # Cache preflight for 1 hour
+    allow_origins=["*"],  # Allow ALL origins
+    allow_credentials=False,  # Must be False when using wildcard
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=3600,
 )
 
-# Add OPTIONS handler for preflight requests
+# Request logging middleware
+@app.middleware("http")
+async def log_requests(request, call_next):
+    """Log all incoming requests for debugging."""
+    logger.info(f"{request.method} {request.url.path} from {request.client.host if request.client else 'unknown'}")
+    response = await call_next(request)
+    return response
+
+# Add explicit OPTIONS handler for preflight
 @app.options("/{full_path:path}")
 async def options_handler(full_path: str):
-    """Handle OPTIONS requests for CORS preflight."""
+    """Handle OPTIONS requests explicitly."""
     return JSONResponse(
         content={},
         headers={
             "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
             "Access-Control-Allow-Headers": "*",
+            "Access-Control-Max-Age": "3600",
         }
     )
 
