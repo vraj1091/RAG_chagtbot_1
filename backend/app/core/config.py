@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
     
     # API Keys
-    GEMINI_API_KEY: str = "AIzaSyBByaQBXcRJ3ULt_NuTea6fhupZNknXnnA"
+    GEMINI_API_KEY: str = "AIzaSyBI0ArhiSoljxmEZ4y51mf-pv5lI9A3Zos"
     
     # Security
     SECRET_KEY: str = "your-super-secret-key-change-in-production"
